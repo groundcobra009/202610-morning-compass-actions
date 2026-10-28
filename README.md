@@ -1,82 +1,94 @@
-# モーニングコンパス制作ドキュメント置き場
+# モーニングコンパス 番組進行表（GAS）
 
-架空の情報番組「モーニングコンパス」の企画書・構成表・リサーチ・会議メモを置くリポジトリです。
-**Issue に `@claude` と書くだけで、AI が文書のたたき台を書いて PR を出します。**
+架空の情報番組「モーニングコンパス」の進行表を Google Apps Script（GAS）で管理するリポジトリです。
+**Claude Code（Web 版）で直して GitHub にマージするだけで、GAS に反映されます。**
 AI の働き方のルールは [CLAUDE.md](CLAUDE.md) にあります。
 
 ## アプリを入れなくても動く仕組み
 
 ```
-あなたが Issue を書く（@claude ＋ 頼みごと）
+ブラウザの Claude Code（claude.ai/code）に「コーナーを1つ足して」と頼む
    ↓
-GitHub Actions が起動（.github/workflows/claude.yml）
+Claude がこのリポジトリを読み、src/Code.js を直して PR を出す
    ↓
-Claude Code がこのリポジトリを読み、docs/ に文書を書く
+人が PR を読んで、マージする（= main に push される）
    ↓
-PR が届く → 人が読んで、マージする
+GitHub Actions が起動（.github/workflows/deploy-gas.yml）
+   ↓
+clasp push で GAS に反映される → GAS エディタを開き直すと変わっている
 ```
 
-手元の PC には何も入れません。必要なのは GitHub のブラウザ画面だけです。
+手元の PC には何も入れません。Claude も clasp も、全部ブラウザの向こう側で動きます。
 
-## 同じ仕組みを自分のリポジトリに入れる（3ステップ）
+## 同じ仕組みを自分の GAS に入れる（3ステップ）
 
-> 前提: 自分がそのリポジトリの管理者であること。Claude の契約（Pro / Max / Team）か Claude API のキーが必要です。
+> 前提: 反映したい GAS プロジェクトがあること（スプレッドシートの「拡張機能 → Apps Script」で開くものでも可）。
+> Claude Code（Web 版）を使うには Claude の契約（Pro / Max / Team）が必要です。
 
-### 1. Claude GitHub App を設置する
+### 0. 一度だけ: Apps Script API をオンにする
 
-1. https://github.com/apps/claude を開き **Install**
-2. **Only select repositories** で対象のリポジトリだけを選んで **Install**
-3. リポジトリの **Settings → GitHub Apps** に Claude が並べば完了
+Google アカウントで https://script.google.com/home/usersettings を開き、**Google Apps Script API** をオンにします。これが無いと clasp が GAS に書き込めません。
 
-### 2. Secret にトークンを登録する
+### 1. Google の鍵を作って Secret に入れる
 
-1. Claude の契約者が、手元の Claude Code で次を実行し、表示されたトークンをコピーする
-   ```bash
-   claude setup-token
-   ```
-   （API キー方式の場合は Claude Console で発行したキーを使う）
-2. リポジトリの **Settings → Secrets and variables → Actions → New repository secret**
-3. Name は次のとおり正確に。Secret に 1. の値を貼って **Add secret**
+`clasp login` を**一度だけ**どこかで実行し、できた認証ファイルの中身を GitHub の Secret に入れます。
+PC に Node を入れられない場合は、ブラウザで動く **GitHub Codespaces**（リポジトリの Code → Codespaces → Create）で実行できます。
 
-   | 方式 | Name |
-   |---|---|
-   | Claude の契約で動かす | `CLAUDE_CODE_OAUTH_TOKEN` |
-   | API キーで動かす | `ANTHROPIC_API_KEY` |
-
-   値は保存後に二度と表示されません。コードや Issue に貼らないでください。
-
-### 3. ワークフローのファイルを置く
-
-1. **Code → Add file → Create new file**
-2. ファイル名を `.github/workflows/claude.yml` にする
-3. [.github/workflows/claude.yml](.github/workflows/claude.yml) の中身をそのまま貼って **Commit changes**
-   （API キー方式なら `claude_code_oauth_token:` の行を `anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}` に変える）
-
-### 動かしてみる
-
-Issue を1枚立て、本文の先頭に `@claude` を付けて頼みごとを書きます。
-
-```
-@claude 架空の情報番組「モーニングコンパス」の企画書の骨子を作って、PRにしてください。
-
-## やること
-1. docs/企画書/企画書_骨子.md を日本語で新規作成する
-2. 見出しは「番組コンセプト」「ターゲット」「構成（コーナー案3つ）」「差別化ポイント」「今後の検討事項」の5つ
-3. 各見出しに2〜4行のたたき台を書く（数字・実在の番組名は使わない）
+```bash
+npm install -g @google/clasp@3.3.0
+clasp login --no-localhost -A ./clasp-auth.json
 ```
 
-**Actions** タブに実行が1行増え、数分後に Issue へ Claude のコメントと PR へのリンクが付きます。
+表示された URL をブラウザで開いて許可し、戻ってきたコードを貼ると `clasp-auth.json` ができます。
+
+```bash
+gh secret set CLASPRC_JSON < ./clasp-auth.json
+```
+
+（`gh` が無ければ、ファイルの中身をコピーして **Settings → Secrets and variables → Actions → New repository secret** に Name `CLASPRC_JSON` で貼る）
+
+> 鍵ファイルはパスワードと同じです。リポジトリにコミットしない・チャットに貼らない。Secret に入れたら手元のファイルは消してください。
+
+### 2. リポジトリに3つのファイルを置く
+
+| ファイル | 役割 | 書くこと |
+|---|---|---|
+| `.clasp.json` | 反映先 | `scriptId` に GAS の **プロジェクト設定 → スクリプト ID** を貼る。`rootDir` は `src` |
+| `src/appsscript.json` | GAS の設定 | GAS エディタの「プロジェクト設定 → マニフェストを表示」の中身。無ければ [src/appsscript.json](src/appsscript.json) をコピー |
+| `.github/workflows/deploy-gas.yml` | 反映の手順 | [.github/workflows/deploy-gas.yml](.github/workflows/deploy-gas.yml) をそのまま |
+
+既存の GAS コードがあるなら `src/` に `.js` として置きます（GAS エディタの各ファイルが1本ずつ対応）。
+
+ここまで置いて main に push すると、**Actions** タブに「Deploy to GAS」が1行増え、緑のチェックになれば反映されています。
+
+### 3. Claude Code（Web 版）に頼む
+
+1. https://claude.ai/code を開き、**GitHub を接続**（Claude GitHub App を設置し、対象リポジトリを選ぶ）
+2. リポジトリを選んで、やってほしいことを日本語で書く
+
+```
+エンディングの前に「視聴者からのお便り」コーナー（5分、メモは「番組公式アカウントに届いた声を紹介」）を追加してください。
+src/Code.js の SEGMENTS 配列だけを直して、PR にしてください。
+```
+
+3. Claude がブランチに push し、PR を作ります。差分を読んで **Merge**
+4. マージの数十秒後に Actions が走り、GAS エディタを開き直すとコードが変わっています
 
 ## うまく動かないとき
 
 | 症状 | 見るところ |
 |---|---|
-| Actions に実行が増えない | ファイル名が `.github/workflows/claude.yml` か／本文に `@claude` が完全な単語で入っているか（`/claude` `@claude-bot` は不可）／App が**このリポジトリ**に設置されているか |
-| 実行はあるが赤× | ログの「Run Claude Code」を開く。認証系の文言なら Secret の**名前の綴り**か値の貼り損ね。権限系なら呼んだ人に write 権限があるか |
-| PR が自動で開かない | Claude のコメント内のリンクから PR を作る（仕様） |
+| Actions に実行が増えない | ファイル名が `.github/workflows/deploy-gas.yml` か／push 先が `main` か（PR をマージしたか） |
+| 「Google の鍵を復元する」で赤× | Secret の **Name の綴り**（`CLASPRC_JSON`）。値が空だとここで止まる |
+| 「GAS に反映する」で赤×・`User has not enabled the Apps Script API` | 手順 0 の Apps Script API がオフ。鍵を作った Google アカウントでオンにする |
+| 「GAS に反映する」で赤×・`invalid_grant` / `401` | 鍵が古い・貼り損ね。`clasp login` からやり直して Secret を上書き |
+| 「GAS に反映する」で赤×・`404` / `Requested entity was not found` | `.clasp.json` の scriptId が違う。GAS の「プロジェクト設定 → スクリプト ID」を貼り直す |
+| 緑なのに GAS が変わらない | GAS エディタを再読み込み。`rootDir` が `src` になっているか |
+| Claude Code（Web）がリポジトリを出さない | Claude GitHub App の設置対象にそのリポジトリが入っているか |
 
 ## 費用と注意
 
-- GitHub Actions の実行時間（private リポジトリは月の無料枠あり）と、Claude の契約または API 利用料がかかります
-- トークンは発行した人の契約に紐づきます。組織で共有するなら API キー方式を使います
-- 機密情報を置くリポジトリには入れない。AI が読める範囲＝リポジトリ全体です
+- GitHub Actions の実行時間（private リポジトリは月の無料枠あり）と、Claude の契約がかかります。clasp と GAS は無料です
+- 鍵は作った人の Google アカウントの権限で動きます。組織で使うなら専用アカウントで鍵を作ります
+- 機密情報を置くリポジトリには Claude を接続しない。AI が読める範囲＝リポジトリ全体です
+- GAS エディタで直接直すと、次の反映で上書きされます。直すのは GitHub 側だけにします
