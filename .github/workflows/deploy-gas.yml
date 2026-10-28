@@ -23,17 +23,23 @@ jobs:
       - name: clasp を入れる
         run: npm install -g @google/clasp@3.3.0
 
-      # Secret CLASPRC_JSON（clasp login で作った認証ファイルの中身）を
-      # 実行環境のホームに書き戻す。値はログに出さない。
+      # Secret CLASPRC_JSON_BASE64（clasp login で作った認証ファイルを base64 にした文字列）を
+      # 元のファイルに戻して実行環境のホームに置く。値はログに出さない。
+      # 旧方式の Secret CLASPRC_JSON（ファイルの中身そのまま）しか無い場合はそちらを使う。
       - name: Google の鍵を復元する
         env:
+          CLASPRC_JSON_BASE64: ${{ secrets.CLASPRC_JSON_BASE64 }}
           CLASPRC_JSON: ${{ secrets.CLASPRC_JSON }}
         run: |
-          if [ -z "$CLASPRC_JSON" ]; then
-            echo "::error::Secret CLASPRC_JSON が空です。Settings → Secrets に登録してください"
+          if [ -n "$CLASPRC_JSON_BASE64" ]; then
+            printf '%s' "$CLASPRC_JSON_BASE64" | tr -d '\r\n ' | base64 -d > "$HOME/.clasprc.json"
+          elif [ -n "$CLASPRC_JSON" ]; then
+            printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+          else
+            echo "::error::Secret CLASPRC_JSON_BASE64 が空です。Settings → Secrets に登録してください"
             exit 1
           fi
-          printf '%s' "$CLASPRC_JSON" > "$HOME/.clasprc.json"
+          chmod 600 "$HOME/.clasprc.json"
           echo "鍵を復元しました（$(wc -c < "$HOME/.clasprc.json") バイト）"
 
       - name: 反映するファイルを確認する

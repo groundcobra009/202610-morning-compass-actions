@@ -12,7 +12,7 @@ Claude Code のアプリを入れられない環境でも、ブラウザの Clau
 ## 3. 完成状態（Definition of Done）
 
 - [ ] `.github/workflows/deploy-gas.yml` が置かれ、main への push で `clasp push` が走る
-- [ ] Secret `CLASPRC_JSON` が登録され、`.clasp.json` に反映先の scriptId が入っている
+- [ ] Secret `CLASPRC_JSON_BASE64`（旧 `CLASPRC_JSON` も可）が登録され、`.clasp.json` に反映先の scriptId が入っている
 - [ ] Claude Code（Web）で `src/Code.js` を直した PR をマージすると、Actions が緑になり GAS エディタに反映される履歴が残っている
 - [ ] 上記を投影したとき、顧客名・個人情報・鍵の値が画面に出ない
 

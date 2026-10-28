@@ -42,10 +42,10 @@ clasp login --no-localhost -A ./clasp-auth.json
 表示された URL をブラウザで開いて許可し、戻ってきたコードを貼ると `clasp-auth.json` ができます。
 
 ```bash
-gh secret set CLASPRC_JSON < ./clasp-auth.json
+base64 -i ./clasp-auth.json | tr -d '\n' | gh secret set CLASPRC_JSON_BASE64
 ```
 
-（`gh` が無ければ、ファイルの中身をコピーして **Settings → Secrets and variables → Actions → New repository secret** に Name `CLASPRC_JSON` で貼る）
+（`gh` が無ければ、base64 にした文字列（Windows PowerShell は `[Convert]::ToBase64String([System.IO.File]::ReadAllBytes("$env:USERPROFILE\.clasprc.json")) | Set-Clipboard`）を **Settings → Secrets and variables → Actions → New repository secret** に Name `CLASPRC_JSON_BASE64` で貼る）
 
 > 鍵ファイルはパスワードと同じです。リポジトリにコミットしない・チャットに貼らない。Secret に入れたら手元のファイルは消してください。
 
@@ -79,7 +79,7 @@ src/Code.js の SEGMENTS 配列だけを直して、PR にしてください。
 | 症状 | 見るところ |
 |---|---|
 | Actions に実行が増えない | ファイル名が `.github/workflows/deploy-gas.yml` か／push 先が `main` か（PR をマージしたか） |
-| 「Google の鍵を復元する」で赤× | Secret の **Name の綴り**（`CLASPRC_JSON`）。値が空だとここで止まる |
+| 「Google の鍵を復元する」で赤× | Secret の **Name の綴り**（`CLASPRC_JSON_BASE64`）。値が空だとここで止まる |
 | 「GAS に反映する」で赤×・`User has not enabled the Apps Script API` | 手順 0 の Apps Script API がオフ。鍵を作った Google アカウントでオンにする |
 | 「GAS に反映する」で赤×・`invalid_grant` / `401` | 鍵が古い・貼り損ね。`clasp login` からやり直して Secret を上書き |
 | 「GAS に反映する」で赤×・`404` / `Requested entity was not found` | `.clasp.json` の scriptId が違う。GAS の「プロジェクト設定 → スクリプト ID」を貼り直す |
