@@ -18,6 +18,7 @@ const SEGMENTS = [
   { title: '今日のニュース', minutes: 12, note: '上位3本を深掘り' },
   { title: '天気と交通', minutes: 5, note: '通勤・通学向け' },
   { title: '特集: 朝ごはん探訪', minutes: 15, note: 'ロケVTR＋スタジオトーク' },
+  { title: '視聴者からのお便り', minutes: 5, note: '番組公式アカウントに届いた声を紹介' },
   { title: 'エンディング', minutes: 5, note: '明日の予告' },
 ];
 
