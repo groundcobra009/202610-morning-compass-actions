@@ -27,3 +27,10 @@
 - **変更内容**: 「Issue に `@claude` → Actions 内で Claude が文書を書く」構成から、「Web 版 Claude Code で `src/` を直す → PR をマージ → Actions が `clasp push` → GAS に反映」構成へ変更
 - **変更理由**: セミナーの題材が「GAS の反映を GitHub Actions に任せる」であることが 10/28 夜に確定したため（Claude のトークンは不要になり、Secret は Google の鍵 `CLASPRC_JSON` に変わった）
 - **影響範囲**: Secret `CLASPRC_JSON` の登録と `.clasp.json` の scriptId 記入は別途（手作業）
+
+## 2026-10-28 — 反映先 GAS を設定し、初回の反映に成功
+
+- **変更対象**: `.clasp.json`（scriptId）・`.github/workflows/deploy-gas.yml`（setup-node v5）・`GOAL.md`・`README.md`
+- **変更内容**: 反映先 GAS「モーニングコンパス 進行表（完成版デモ）」を新規作成して scriptId を設定。リポジトリを public に変更（社長判断）。初回の「Deploy to GAS」が成功し、GAS 側のファイルがリポジトリの `src/` と一致することを確認
+- **変更理由**: groundcobra009 の private リポジトリで Actions が課金停止のため動かなかった（public は無料枠無制限）
+- **影響範囲**: 実測: ジョブ17秒（clasp 導入10秒・push 2秒）、push から完了まで約30秒
